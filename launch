@@ -1,0 +1,2 @@
+%%bash
+php -f display_tier_list.php
