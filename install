@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Install dependencies for the anime tier list website
+echo "Installing dependencies..."
+
+apt-get update
+apt-get install -y php mysql-server php-mysql
+
+echo "Installation complete!"
+echo "Next steps:"
+echo "1. Run: bash init_database.sh"
+echo "2. Start PHP server: php -S localhost:8000"
+echo "3. Open browser: http://localhost:8000"

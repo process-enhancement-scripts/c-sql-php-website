@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Character Tier List</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .tier-list {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+        }
+
+        .tier-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        .tier-row:last-child {
+            border-bottom: none;
+        }
+
+        .tier-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            font-size: 2em;
+            font-weight: bold;
+            color: white;
+            border-radius: 5px;
+            margin-right: 15px;
+        }
+
+        .tier-s { background: #ff6b6b; }
+        .tier-a { background: #ffa500; }
+        .tier-b { background: #ffd700; }
+        .tier-c { background: #98d8c8; }
+        .tier-d { background: #6bcf7f; }
+        .tier-e { background: #4d96ff; }
+        .tier-f { background: #9370db; }
+
+        .tier-characters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            flex: 1;
+            align-items: center;
+        }
+
+        .character-tag {
+            background: #f0f0f0;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 2px solid #ddd;
+        }
+
+        .character-tag .remove {
+            cursor: pointer;
+            font-weight: bold;
+            color: #999;
+            transition: color 0.2s;
+        }
+
+        .character-tag .remove:hover {
+            color: #f00;
+        }
+
+        .character-select {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .character-select select {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .add-character-btn {
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.2s;
+        }
+
+        .add-character-btn:hover {
+            background: #764ba2;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-reset {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-reset:hover {
+            background: #ff5252;
+        }
+
+        .btn-save {
+            background: #51cf66;
+            color: white;
+        }
+
+        .btn-save:hover {
+            background: #40c057;
+        }
+
+        .status-message {
+            text-align: center;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⭐ Anime Character Tier List ⭐</h1>
+        
+        <div class="tier-list" id="tierList">
+            <div class="loading">Loading tier list...</div>
+        </div>
+
+        <div class="controls">
+            <button class="btn-save" onclick="saveTierList()">💾 Save Tier List</button>
+            <button class="btn-reset" onclick="resetTierList()">🔄 Reset All</button>
+        </div>
+
+        <div class="status-message" id="statusMessage"></div>
+    </div>
+
+    <script>
+        const TIERS = ['S', 'A', 'B', 'C', 'D', 'E', 'F'];
+        const TIER_COLORS = {
+            'S': 'tier-s',
+            'A': 'tier-a',
+            'B': 'tier-b',
+            'C': 'tier-c',
+            'D': 'tier-d',
+            'E': 'tier-e',
+            'F': 'tier-f'
+        };
+
+        let allCharacters = [];
+        let tierAssignments = {};
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTierList();
+        });
+
+        function loadTierList() {
+            fetch('api.php?action=get_tier_list')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        allCharacters = data.characters || [];
+                        tierAssignments = data.assignments || {};
+                        renderTierList();
+                    } else {
+                        showStatus('Error loading tier list: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showStatus('Error loading tier list', 'error');
+                });
+        }
+
+        function renderTierList() {
+            const tierListDiv = document.getElementById('tierList');
+            tierListDiv.innerHTML = '';
+
+            TIERS.forEach(tier => {
+                const row = document.createElement('div');
+                row.className = 'tier-row';
+
+                const label = document.createElement('div');
+                label.className = `tier-label ${TIER_COLORS[tier]}`;
+                label.textContent = tier;
+
+                const charactersDiv = document.createElement('div');
+                charactersDiv.className = 'tier-characters';
+
+                // Get characters in this tier
+                const charsInTier = Object.entries(tierAssignments)
+                    .filter(([charId, tierRank]) => tierRank === tier)
+                    .map(([charId]) => {
+                        const char = allCharacters.find(c => c.id == charId);
+                        return { id: charId, name: char ? char.name : 'Unknown' };
+                    });
+
+                charsInTier.forEach(char => {
+                    const tag = document.createElement('div');
+                    tag.className = 'character-tag';
+                    tag.innerHTML = `
+                        ${char.name}
+                        <span class="remove" onclick="removeCharacterFromTier(${char.id})">✕</span>
+                    `;
+                    charactersDiv.appendChild(tag);
+                });
+
+                // Get unranked characters for dropdowns
+                const rankedIds = Object.keys(tierAssignments).map(id => parseInt(id));
+                const unranked = allCharacters.filter(c => !rankedIds.includes(c.id));
+
+                if (unranked.length > 0) {
+                    const selectDiv = document.createElement('div');
+                    selectDiv.className = 'character-select';
+                    const select = document.createElement('select');
+                    select.innerHTML = '<option value="">+ Add character</option>';
+                    unranked.forEach(char => {
+                        const option = document.createElement('option');
+                        option.value = char.id;
+                        option.textContent = char.name;
+                        select.appendChild(option);
+                    });
+                    select.onchange = function() {
+                        if (this.value) {
+                            assignCharacterToTier(this.value, tier);
+                            this.value = '';
+                        }
+                    };
+                    selectDiv.appendChild(select);
+                    charactersDiv.appendChild(selectDiv);
+                }
+
+                row.appendChild(label);
+                row.appendChild(charactersDiv);
+                tierListDiv.appendChild(row);
+            });
+        }
+
+        function assignCharacterToTier(characterId, tier) {
+            fetch('api.php?action=assign_tier', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `character_id=${characterId}&tier=${tier}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    tierAssignments[characterId] = tier;
+                    renderTierList();
+                    showStatus('Character assigned to ' + tier + ' tier!', 'success');
+                } else {
+                    showStatus('Error: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showStatus('Error assigning character', 'error');
+            });
+        }
+
+        function removeCharacterFromTier(characterId) {
+            fetch('api.php?action=remove_tier', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `character_id=${characterId}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    delete tierAssignments[characterId];
+                    renderTierList();
+                    showStatus('Character removed from tier list', 'success');
+                } else {
+                    showStatus('Error: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showStatus('Error removing character', 'error');
+            });
+        }
+
+        function saveTierList() {
+            showStatus('Tier list saved!', 'success');
+        }
+
+        function resetTierList() {
+            if (confirm('Are you sure you want to reset the entire tier list?')) {
+                fetch('api.php?action=reset_all', {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        tierAssignments = {};
+                        renderTierList();
+                        showStatus('Tier list has been reset!', 'success');
+                    } else {
+                        showStatus('Error: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showStatus('Error resetting tier list', 'error');
+                });
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status-message ' + type;
+            setTimeout(() => {
+                statusDiv.className = 'status-message';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
