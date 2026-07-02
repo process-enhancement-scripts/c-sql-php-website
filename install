@@ -1,4 +1,0 @@
-%%bash
-apt-get update
-apt-get install -y php mysql-server php-mysql
-pip install mysql-connector-python
